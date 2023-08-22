@@ -1,0 +1,104 @@
+---
+- name: Varnish Cache For Apache HTTP Server Cofiguration Playbook
+  hosts: dev
+  become: true
+  tasks:
+  - name: Setting up the static hostname in the server machine
+    hostname:
+     name: node1.varnish.com
+     use: systemd
+  - name: Making entries in the /etc/hosts file for the server hostname and IP address
+    lineinfile:
+     dest: /etc/hosts
+     line: 172.31.33.247 www.varnish.com node1
+     insertafter: EOF
+
+  - name: Installing Apache and SELinux Policy packages in the machine
+    yum:
+     name:
+      - httpd
+      - policycoreutils-python-utils
+      - varnish
+     state: latest
+
+  - name: Creating /varnishweb directory for the document root
+    file:
+     path: /varnishweb/
+     mode: '0755'
+     state: directory
+     owner: apache
+     group: apache
+
+  - name: Creating the index file in the /varnishweb directory
+    copy:
+     dest: "/varnishweb/index.html"
+     content: <h1>Sandeep is a Devops Engineer</h1>
+
+  - name: Ceating HTTPD configuratin file in the /etc/httpd/conf.d/ directory
+    copy:
+     dest: "/etc/httpd/conf.d/httpd.conf"
+     content: |
+      <VirtualHost *:8080>
+      ServerAdmin root@node1.varnish.com
+      ServerAlias varnish.com node1
+      DocumentRoot /varnishweb/
+      ServerName www.varnish.com
+      ErrorLog logs/www.varnish.com-error_log
+      CustomLog logs/www.varnish.com-access_log common
+      <Directory /varnishweb/>
+      Options Indexes FollowSymlinks
+      AllowOverride None
+      Require all granted
+      </Directory>
+      </VirtualHost>
+
+  - name: Copying the /etc/httpd/conf/httpd.conf file using ansible jinja template
+    template:
+     src: httpd3.conf.j2
+     dest: /etc/httpd/conf/httpd.conf
+     force: true
+
+  - name: Allowing apche to modify the files in the /varnishweb/ directory(SELinux Context)
+    sefcontext:
+     target: '/varnishweb(/.*)?'
+     setype: httpd_sys_content_t
+     state: present
+
+  - name: Apply new SELInux file context to filesystem /varnishweb/
+    command: restorecon -Rv /varnishweb/
+
+  - name: Allowing HTTP traffic in the firewall
+    firewalld:
+     service: http
+     zone: public
+     permanent: yes
+     immediate: yes
+     state: enabled
+
+  - name: Starting and enabling HTTPD Service
+    service:
+     name: httpd
+     state: started
+     enabled: yes
+
+  - name: Make changes in the varnish cache /etc/varnish/default.vcl file
+    replace:
+     dest: /etc/varnish/default.vcl
+     regexp: '^.port='
+     replace: '^.port="8080"'
+
+  - name: Creating a systemd unit file for varnish service
+    template:
+     src: varnish.service.j2
+     dest: /etc/systemd/system/varnish.service
+
+  - name: Reloading the systemd service to re read the configuration
+    systemd:
+     daemon-reload: yes
+
+  - name: Starting and enabling the varnish.service
+    service:
+     name: varnish
+     state: started
+     enabled: yes
+
