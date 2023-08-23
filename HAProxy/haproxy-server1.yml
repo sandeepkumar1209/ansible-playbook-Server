@@ -1,0 +1,130 @@
+---
+- name: HAProxy Server Configuration Playbook
+  hosts: localhost
+  become: true
+  tasks:
+  - name: Seting up the static hostname in the server machine
+    hostname:
+     name: haproxy-server
+     use: systemd
+  
+  - name: Making entries in the /etc/hosts file for the server hostname & IP Address
+    blockinfile:
+     dest: /etc/hosts
+     block: |
+      172.31.36.146 haproxy-server
+      172.31.44.59  nginx-node01
+      172.31.41.14  nginx-node02
+     insertafter: EOF
+   
+  - name: Installing HAProxy Packages in the machine
+    yum:
+     name: haproxy
+     state: latest
+  
+  - name: Copying the /etc/haproxy/haproxy.cfg file using ansible jinja template
+    template:
+      src: haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+      force: true
+ 
+  - name: Making changes in the /etc/rsyslog.conf file
+    replace:
+     dest: /etc/rsyslog.conf
+     regexp: '^#module(load= "imudp")'
+     replace: 'module(load= "imudp")'
+
+  - name: Making changes in the /etc/rsyslog.conf file
+    replace:
+     dest: /etc/rsyslog.conf
+     regexp: '^#input(type= "imudp" port="514")'
+     replace: 'input(type= "imudp" port="514")'
+
+  - name: Creating haproxy.conf file for the rsyslog
+    copy:
+     dest: /etc/rsyslog.d/haproxy.conf
+     content: |
+      local2.=info        /var/log/haproxy-access.log
+      local2.notice       /var/log/haproxy-info.log
+  
+  - name: Restarting and enabling the rsyslog service
+    service:
+     name: rsyslog
+     state: restarted
+     enabled: yes
+
+  - name: Turning on the haproxy_connect_any SELinux boolean
+    command: setsebool -P haproxy_connect_any 1 
+
+  - name: Starting and enabling haproxy service
+    service:
+     name: haproxy
+     state: started
+     enabled: yes
+
+- hosts: node1
+  become: true
+  tasks:
+  - name: Seting up the static hostname in the node1 machine
+    hostname:
+     name: nginx-node01
+     use: systemd
+  
+  - name: Making entries in the /etc/hosts file for the server hostname & IP Address
+    blockinfile:
+     dest: /etc/hosts
+     block: |
+      172.31.36.146 haproxy-server
+      172.31.44.59  nginx-node01
+      172.31.41.14  nginx-node02      
+     insertafter: EOF
+   
+  - name: Installing NGINX Packages in the machine
+    yum:
+     name: nginx
+     state: latest
+ 
+  - name: Creating the index.html file for node1
+    copy:
+     dest: "/usr/share/nginx/index.html"
+     content: <h1>Nginx Node1 - Welcome to First Nginx Webserver</h1>
+
+  - name: Starting and enabling nginx service
+    service:
+     name: nginx
+     state: started
+     enabled: yes 
+
+- hosts: node2
+  become: true
+  tasks:
+  - name: Seting up the static hostname in the node2 machine
+    hostname:
+     name: nginx-node02
+     use: systemd
+  
+  - name: Making entries in the /etc/hosts file for the server hostname & IP Address
+    blockinfile:
+     dest: /etc/hosts
+     block: |
+      172.31.36.146 haproxy-server
+      172.31.44.59  nginx-node01
+      172.31.41.14  nginx-node02
+     insertafter: EOF
+   
+  - name: Installing NGINX Packages in the machine
+    yum:
+     name: nginx
+     state: latest
+ 
+  - name: Creating the index.html file for node1
+    copy:
+     dest: "/usr/share/nginx/index.html"
+     content: <h1>Nginx Node2 - Welcome to Second Nginx Webserver</h1>
+
+  - name: Starting and enabling nginx service
+    service:
+     name: nginx
+     state: started
+     enabled: yes 
+
