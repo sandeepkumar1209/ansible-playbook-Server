@@ -1,0 +1,10 @@
+---
+- name: Manage SELinux
+  hosts: dev
+  become: true
+  tasks:
+  - name: Set SELinux to enforcing mode 
+    selinux:
+     policy: targeted
+     state: enforcing
+

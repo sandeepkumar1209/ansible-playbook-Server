@@ -1,0 +1,59 @@
+- name: Name Based Apache HTTP Server Configuaration Playbook
+  hosts: dev
+  become: true
+  tasks:
+  - name: Setting up the static in the server machine
+    hostname:
+     name: node1.sandeeptech.com
+     use: systemd
+
+  - name: Making entries in the /etc/hosts file for the server hostname & IP Address
+    lineinfile:
+     dest: /etc/hosts
+     line: 192.168.85.134 www.sandeeptech.com node1
+     insertafter: EOF
+
+  - name: Installing Apache Package in the machine
+    yum:
+     name: httpd
+     state: latest
+
+  - name: Creating the website indexfile in the /var/www/html directory
+    copy:
+     dest: "/var/www/html/index.html"
+     content: |
+       <i>Sandeep is a Devops Engineer</i>
+ 
+  - name: Creating HTTPD configuration file in the /etc/httpd/conf.d/ directory
+    copy:
+     dest: "/etc/httpd/conf.d/httpd.conf"
+     content: |
+       <VirtualHost 192.168.85.150:80>
+       ServerAdmin root@node1.sandeeptech.com
+       ServerAlias sandeeptech.com node1
+       ServerName www.sandeeptech.com 
+       DocumentRoot /var/www/html/
+       ErrorLog logs/www.sandeeptech.com-error_log
+       CustomLog logs/www.sandeeptech.com-access_log common
+       </VirtualHost>
+
+  - name: make changes in the /etc/httpd/conf/httpd.conf file for the name-based hosting
+    replace:
+     dest: /etc/httpd/conf/httpd.conf 
+     regexp: '^#NameVirtualHost'
+     replace: 'NameVirtualHost 192.168.85.134:80'
+
+  - name: Allowing HTTPS traffic in the firewall
+    firewalld:
+     service: http
+     zone: public
+     permanent: yes
+     immediate: yes
+     state: enabled
+
+  - name: Start and Enabling httpd service
+    service:
+     name: httpd
+     state: started
+     enabled: yes
+

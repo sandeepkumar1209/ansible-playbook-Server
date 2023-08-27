@@ -1,0 +1,15 @@
+---
+- name: Managing Network
+  hosts: dev
+  become: true
+  tasks:
+  - name: Remove an ethernet connection with static IP configuration
+    nmcli:
+     conn_name: ens224
+     ifname: ens224
+     type: ethernet
+     ip4: 192.168.85.140/24
+     gw4: 192.168.85.128
+     dns4: 8.8.8.8
+     state: absent
+     autoconnect: true

@@ -1,0 +1,13 @@
+---
+- name: Managing Network
+  hosts: dev
+  become: true
+  tasks:
+  - name: Add an ethernet connection with dynamic IPv6(DHCP) configuration
+    nmcli:
+     conn_name: ens224
+     ifname: ens224
+     type: ethernet
+     method4: auto
+     state: present
+     autoconnect: true

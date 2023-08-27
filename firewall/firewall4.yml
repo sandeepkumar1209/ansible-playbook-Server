@@ -1,0 +1,11 @@
+---
+- name: Manage Firewall
+  hosts: dev
+  become: true
+  tasks:
+  - name: Allow traffic from UDP ports 161 & 162 in the firewall
+    firewalld:
+     port: 161-162/udp
+     permanent: true
+     state: enabled
+     immediate: yes

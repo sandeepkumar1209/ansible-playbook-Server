@@ -1,0 +1,10 @@
+---
+- name: Manage Firewall
+  hosts: dev
+  become: true
+  tasks:
+  - name: do not permit traffic in default zone on port 8081/tcp
+    firewalld:
+     port: 8081/tcp
+     permanent: true
+     state: disabled

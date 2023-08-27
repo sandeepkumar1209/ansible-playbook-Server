@@ -1,0 +1,9 @@
+- name: iSCSI Client Server Configuration Playbook
+  hosts: node2
+  become: true
+  tasks:
+  - name: Run the iscsi-initiator script which doesnot exists on the remote node
+    script: /home/ansible/iSCSI/iscsi-initiator.sh
+    args:
+     creates: /home/ansible/iSCSI/iscsi-initiator.sh
+

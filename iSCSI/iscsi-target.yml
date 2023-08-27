@@ -1,0 +1,8 @@
+- name: iSCSI Target Server Configuration Playbook
+  hosts: node1
+  become: true
+  tasks:
+  - name: Run the iscsi-target script which doesnot exists on the remote node
+    script: /home/ansible/iSCSI/iscsi-target.sh
+    args:
+     creates: /home/ansible/iSCSI/iscsi-target.sh

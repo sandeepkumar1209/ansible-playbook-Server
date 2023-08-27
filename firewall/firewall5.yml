@@ -1,0 +1,17 @@
+---
+- name: Manage Firewall
+  hosts: dev
+  become: true
+  tasks:
+  - firewalld:
+     rich_rule: rule service name="ftp" audit limit value="1/m" accept
+     permanent: true
+     state: enabled
+     immediate: true
+
+  - firewalld:
+     zone: trusted
+     interface: ens160
+     permanent: true
+     state: enabled
+     immediate: true

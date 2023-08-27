@@ -1,0 +1,10 @@
+---
+- name: Manage Firewall
+  hosts: dev
+  become: true
+  tasks:
+  - name: permit ofpf traffic
+    firewalld:
+     protocol: ospf
+     permanent: true
+     state: enabled

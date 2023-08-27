@@ -1,0 +1,16 @@
+---
+- name: MariaDB
+  hosts: dev
+  gather_facts: true
+  become: true
+  vars:
+    mysql_root_password: "P@$$word"
+  tasks:
+  - name: Removing the databases with names 'foo' and 'bar'
+    mysql_db:
+     name:
+      - foo
+      - bar
+     state: absent
+     login_user: root
+     login_password: "{{ mysql_root_password }}"

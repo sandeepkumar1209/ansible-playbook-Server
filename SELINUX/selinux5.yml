@@ -1,0 +1,11 @@
+---
+- name: Manage SELinux
+  hosts: dev
+  become: true
+  tasks:
+  - name: Set httpd_can_connect_ftp flag ON and enable it to persist on reboot
+    seboolean:
+     name: httpd_can_connect_ftp
+     state: yes
+     persistent: yes
+

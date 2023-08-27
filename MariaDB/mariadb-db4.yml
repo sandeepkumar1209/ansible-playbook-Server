@@ -1,0 +1,15 @@
+---
+- name: MariaDB
+  hosts: dev
+  gather_facts: true
+  become: true
+  vars:
+    mysql_root_password: "P@$$word"
+  tasks:
+  - name: Restore the database
+    mysql_db:
+      name: my_db
+      state: import
+      target: /tmp/foo.sql
+      login_user: root
+      login_password: "{{ mysql_root_password  }}"

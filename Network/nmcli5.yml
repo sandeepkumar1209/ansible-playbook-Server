@@ -1,0 +1,11 @@
+---
+- name: Managing Network
+  hosts: dev
+  become: true
+  tasks:
+  - name: Delete the existing connection for adding 2 additional IPv4 connection
+    nmcli:
+     conn_name: ens224
+     ifname: ens224
+     type: ethernet
+     state: absent

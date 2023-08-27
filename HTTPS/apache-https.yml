@@ -1,0 +1,71 @@
+---
+- name: Apache HTTPS Server Configuaration Playbook
+  hosts: dev
+  become: true
+  tasks:
+  - name: Setting up the static in the server machine
+    hostname:
+     name: node1.local
+     use: systemd
+  - name: Installing Apache and Openssl packages in the machine
+    yum:
+     name: 
+      - httpd
+      - openssl
+      - mod_ssl
+     state: latest
+  - name: Generating the Private key with the name as localhost.key
+    openssl_privatekey:
+     path: /etc/pki/tls/private/localhost.key
+     size: 2048
+  - name: Generating Certificate Sign Request(CSR)
+    community.crypto.x509_certificate:
+     path: /etc/pki/tls/certs/localhost.crt
+     privatekey_path: /etc/pki/tls/private/localhost.key
+     force: true
+     provider: selfsigned
+  - name: Creating /var/www/html/website/ directory for the document root
+    file:
+      path: /var/www/html/website/
+      mode: 0755
+      state: directory
+  - name: Copying the file to /var/www/html/website/ directory
+    copy:
+     src: /home/ansible/canvas.mp4
+     dest: /var/www/html/website/canvas.mp4
+     mode: '0644'
+  - name: Creating HTTPD configuration file in the /etc/httpd/conf.d/ directory
+    copy:
+     dest: "/etc/httpd/conf.d/httpd.conf"
+     content: |
+       <VirtualHost *:443>
+       SSLEngine on
+       SSLCertificateFile /etc/pki/tls/private/localhost.key
+       SSLCertificateKeyFile /etc/pki/tls/certs/localhost.crt
+       ServerName node1.local
+       DocumentRoot /var/www/html/website/
+       </VirtualHost>
+  - name: make changes in the /etc/httpd/conf.d/ssl.conf file(set the server name)
+    lineinfile:
+     dest: /etc/httpd/conf.d/ssl.conf
+     regexp: '^#ServerName'
+     line: 'ServerName node1.local:443'
+  - name: Allowing Apache to modify the files in the /var/www/html/website/ directory(SELinux Context)
+    command: restorecon -Rv /var/www/html/
+  - name: Allowing HTTPS traffic in the firewall
+    firewalld:
+     service: https
+     zone: public
+     permanent: yes
+     immediate: yes
+     state: enabled
+  - name: Start and Enabling httpd service
+    service:
+     name: httpd
+     state: started
+     enabled: yes
+
+     
+
+      
+      

@@ -1,0 +1,11 @@
+---
+- name: Manage Firewall
+  hosts: dev
+  become: true
+  tasks:
+  - name: permit traffic in default zone for https service
+    firewalld:
+     service: https
+     zone: public
+     state: enabled
+     

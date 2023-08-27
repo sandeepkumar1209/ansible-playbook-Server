@@ -1,0 +1,16 @@
+---
+- name: Manage Firewall
+  hosts: dev
+  become: true
+  tasks:
+  - firewalld:
+     masquerade: yes
+     state: enabled
+     permanent: true
+     zone: dmz
+     immediate: yes
+
+  - firewalld:
+     zone: custom
+     state: enabled
+     permanent: true

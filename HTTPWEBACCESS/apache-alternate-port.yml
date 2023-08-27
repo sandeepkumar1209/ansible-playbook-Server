@@ -1,0 +1,86 @@
+- name: Alternate Port Apache HTTP Server Configuaration Playbook
+  hosts: dev
+  become: true
+  tasks:
+  - name: Setting up the static in the server machine
+    hostname:
+     name: node1.sandeeptech.com
+     use: systemd
+
+  - name: Making entries in the /etc/hosts file for the server hostname & IP Address
+    lineinfile:
+     dest: /etc/hosts
+     line: 192.168.85.134 www.sandeeptech.com node1
+     insertafter: EOF
+
+  - name: Installing Apache & SELinux Policy Package in the machine
+    yum:
+     name: 
+      - httpd
+      - policycoreutils-python-utils 
+     state: latest
+  
+  - name: Creating /sandeeptech/ directory for the document root
+    file:
+      path: /sandeeptech/
+      mode: '0755'
+      state: directory
+      owner: apache
+      group: apache
+
+  - name: Creating the website indexfile in the /sandeeptech/ directory
+    copy:
+     dest: "/sandeeptech/index.html"
+     content: |
+       <i>This page hosted on dev using port 82 for name based apache virtual hosting</i>
+ 
+  - name: Creating HTTPD configuration file in the /etc/httpd/conf.d/ directory
+    copy:
+     dest: "/etc/httpd/conf.d/httpd.conf"
+     content: |
+       <VirtualHost 192.168.85.150:82>
+       ServerAdmin root@node1.sandeeptech.com
+       ServerAlias sandeeptech.com node1
+       ServerName www.sandeeptech.com 
+       DocumentRoot /sandeeptech/ 
+       ErrorLog logs/www.sandeeptech.com-error_log
+       CustomLog logs/www.sandeeptech.com-access_log common
+       <Directory /sandeeptech/ >
+        Options Indexes FollowSymlinks
+        AllowOverride None
+        Require all granted
+       </Directory>
+       </VirtualHost>
+
+  - name: Copying /etc/httpd/conf/httpd.conf file using ansible jinja template
+    template:
+     src: httpd.conf2.j2
+     dest: /etc/httpd/conf/httpd.conf 
+     force: true
+
+  - name: Allowing Apache to modify the files in the /sandeeptech/ directory(SELinux Context)
+    sefcontext:
+     target: '/sandeeptech(/.*)?'
+     setype: httpd_sys_content_t
+     state: present
+
+  - name: Allowing Apache to modify the files in the /sandeeptech/ directory(SELinux Context)
+    command: restorecon -Rv /sandeeptech/ 
+
+  - name: Adding TCP port 82 in SELinux
+    command: semanage port -p -t http_port_t -p tcp 82
+
+  - name: Allowing HTTPS traffic in the firewall
+    firewalld:
+     port: 82/tcp
+     zone: public
+     permanent: yes
+     immediate: yes
+     state: enabled
+
+  - name: Start and Enabling httpd service
+    service:
+     name: httpd
+     state: started
+     enabled: yes
+
