@@ -1,0 +1,52 @@
+---
+- name: NFS Server Configuration Playbook
+  hosts: node1
+  become: true
+  tasks:
+  - name: Installing NFS Packages
+    yum:
+     name: nfs*
+     state: latest
+
+  - name: Starting and enabling NFS Services
+    systemd:
+     name: "{{ item }}"
+     state: started
+     enabled: yes
+    loop:
+     - nfs-server
+     - rpcbind
+
+  - name: Creating NFS export directory
+    file:
+     path: /nfs_share
+     mode: '0777'
+     owner: nobody
+     group: nobody
+     state: directory
+
+  - name: Configuring NFS exports
+    lineinfile:
+     path: /etc/exports
+     line: "/nfs_share *(rw,sync,no_all_squash,no_root_squash)"
+     state: present
+    notify: Restart NFS
+ 
+
+  - name: Ensure NFS-related ports are open in firewall
+    firewalld:
+     service: "{{ item }}"
+     permanent: yes
+     immediate: yes
+     state: enabled
+    loop:
+     - nfs
+     - rpc-bind
+     - mountd
+
+  handlers:
+  - name: Restart NFS
+    systemd: 
+     name: nfs-server
+     state: restarted
+

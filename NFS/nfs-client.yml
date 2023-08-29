@@ -1,0 +1,30 @@
+---
+- name: NFS Share Mount Playbook
+  hosts: localhost
+  become: yes
+  vars:
+   nfs_server: "node1.local"
+   nfs_share: "/nfs_share"
+   mount_point: "/opt/nfs_mount"
+  tasks:
+ 
+  - name: Installing NFS Packages
+    yum:
+     name: "{{ item }}"
+     state: latest
+    loop:
+     - nfs-utils
+     - nfs4-acl-tools
+
+  - name: Ensuring mounpoint directories exists
+    file:
+     path: "{{ mount_point }}"
+     state: directory
+
+  - name: Mounting the NFS Service
+    mount:
+     src: "{{ nfs_server }}:{{ nfs_share }}" 
+     path: "{{ mount_point }}"
+     fstype: nfs
+     opts: defaults
+     state: mounted
