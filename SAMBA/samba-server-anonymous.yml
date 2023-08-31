@@ -1,0 +1,48 @@
+---
+- name: Samba Server Configuration Playbook
+  hosts: node1
+  become: true
+  tasks:
+  - name: Seeting up the static hostname in the machine
+    hostname:
+     name: samba.local
+     use: systemd
+
+  - name: Installing the samba packages
+    yum:
+     name: samba*
+     state: latest
+
+  - name: Creating the directory of samba share
+    file:
+     path: /srv/samba/anonymous
+     mode: '0755'
+     state: directory
+     owner: nobody
+     group: nobody
+
+  - name: Managing the SELinux label on the samba share directory
+    command: chcon -t samba_share_t /srv/samba/anonymous
+
+  - name: Copying samba configuration file on the managed nodes
+    template:
+     src: smb.conf.j2
+     dest: /etc/samba/smb.conf
+     force: true
+
+  - name: Allowing samba traffic in the firewall
+    firewalld:
+     service: samba
+     state: enabled
+     immediate: yes
+
+  - name: Starting and Enabling the smd and nmb service
+    service:
+     name: "{{ item }}"
+     state: started
+     enabled: yes
+    loop:
+     - smb
+     - nmb
+  
+ 
